@@ -1,0 +1,1 @@
+/Users/tasfia_ara/.konan/kotlin-native-prebuilt-macos-x86_64-2.2.21/klib/commonized/2.2.21
