@@ -1,4 +1,4 @@
-//package org.example.gitwispr.auth
-//
-//expect fun createAuthenticator(): GithubAuthenticator
-// Remove file
+package org.example.gitwispr.auth
+
+// Expect function - each platform will provide its implementation
+expect fun createGithubAuthenticator(): GithubAuthenticator

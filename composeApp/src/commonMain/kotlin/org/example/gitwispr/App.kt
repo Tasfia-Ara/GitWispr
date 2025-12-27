@@ -1,57 +1,22 @@
 package org.example.gitwispr
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import org.example.gitwispr.auth.GithubAuthenticator
-
-import gitwispr.composeapp.generated.resources.Res
-import gitwispr.composeapp.generated.resources.compose_multiplatform
 
 @Composable
 @Preview
-fun App(authenticator: GithubAuthenticator? = null) {  // ✅ Add optional parameter
-    MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
+fun App() {
+    val navigator = remember { Navigator() }
 
-        // ✅ If authenticator is provided, show landing page
-        if (authenticator != null) {
-            LandingPage(authenticator = authenticator)
-        } else {
-            // Your original App content
-            Column(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .safeContentPadding()
-                    .fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Button(onClick = { showContent = !showContent }) {
-                    Text("Click me!")
-                }
-                AnimatedVisibility(showContent) {
-                    val greeting = remember { Greeting().greet() }
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Image(painterResource(Res.drawable.compose_multiplatform), null)
-                        Text("Compose: $greeting")
-                    }
-                }
-            }
+    MaterialTheme {
+        when (val screen = navigator.currentScreen) {
+            is Screen.Landing -> LandingPage(navigator)
+            is Screen.RepoList -> RepoListPage(
+                username = screen.username,
+                token = screen.token,
+                navigator = navigator
+            )
         }
     }
 }

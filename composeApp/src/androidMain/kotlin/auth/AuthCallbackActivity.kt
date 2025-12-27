@@ -1,46 +1,49 @@
 package org.example.gitwispr.auth
 
-import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class AuthCallbackActivity : Activity() {
+class AuthCallbackActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val uri = intent?.data
-        if (uri != null && uri.scheme == "gitwispr") {
-            val code = uri.getQueryParameter("code")
-            val error = uri.getQueryParameter("error")
+        // Get the OAuth code from the redirect URI
+        val uri = intent.data
+        val code = uri?.getQueryParameter("code")
+        val error = uri?.getQueryParameter("error")
 
-            when {
-                code != null -> {
-                    // Exchange code for token
-                    CoroutineScope(Dispatchers.Main).launch {
-                        val authenticator = AndroidGitHubAuthenticator(applicationContext)
-                        val result = authenticator.exchangeCodeForToken(code)
+        when {
+            code != null -> {
+                // Exchange code for token
+                CoroutineScope(Dispatchers.Main).launch {
+                    val authenticator = AndroidGitHubAuthenticator(
+                        context = applicationContext,
+                        config = AuthConfig()
+                    )
 
-                        result.fold(
-                            onSuccess = { token ->
-                                AuthCallbackHandler.onSuccess?.invoke(token)
-                            },
-                            onFailure = { exception ->
-                                AuthCallbackHandler.onError?.invoke(exception.message ?: "Unknown error")
-                            }
-                        )
-                        finish()
-                    }
-                }
-                error != null -> {
-                    AuthCallbackHandler.onError?.invoke(error)
-                    finish()
+                    val result = authenticator.exchangeCodeForToken(code)
+                    result.fold(
+                        onSuccess = { token ->
+                            AuthCallbackHandler.onSuccess?.invoke(token)
+                        },
+                        onFailure = { exception ->
+                            AuthCallbackHandler.onError?.invoke(exception.message ?: "Unknown error")
+                        }
+                    )
                 }
             }
-        } else {
-            finish()
+            error != null -> {
+                AuthCallbackHandler.onError?.invoke(error)
+            }
+            else -> {
+                AuthCallbackHandler.onError?.invoke("No code or error received")
+            }
         }
+
+        // Close this activity
+        finish()
     }
 }
