@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    kotlin("plugin.serialization")
 }
 
 kotlin {
@@ -59,6 +60,12 @@ kotlin {
             implementation("io.ktor:ktor-client-core:3.0.3")
             implementation("io.ktor:ktor-client-content-negotiation:3.0.3")
             implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
+            implementation("io.ktor:ktor-client-core:3.0.3")
+            implementation("io.ktor:ktor-client-content-negotiation:3.0.3")
+            implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")  // ✅ Make sure this exists
+
+
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -1,6 +1,5 @@
 package org.example.gitwispr
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,15 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-data class Repository(
-    val owner: String,
-    val name: String,
-    val fullName: String,
-    val description: String?,
-    val language: String?,
-    val stars: Int
-)
+import org.example.gitwispr.data.RepoCache
+import org.example.gitwispr.data.Repository
+import org.example.gitwispr.utils.GitHubUrlParser
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,27 +23,13 @@ fun RepoListPage(
     token: String,
     navigator: Navigator
 ) {
-    // Mock repositories for now
-    val recentRepos = remember {
-        listOf(
-            Repository(
-                owner = "facebook",
-                name = "react",
-                fullName = "facebook/react",
-                description = "The library for web and native user interfaces",
-                language = "JavaScript",
-                stars = 230000
-            ),
-            Repository(
-                owner = "torvalds",
-                name = "linux",
-                fullName = "torvalds/linux",
-                description = "Linux kernel source tree",
-                language = "C",
-                stars = 180000
-            )
-        )
+    // Initialize mock data on first load
+    LaunchedEffect(Unit) {
+        RepoCache.initMockData()
     }
+
+    val repos = RepoCache.repos
+    var showAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -92,12 +71,11 @@ fun RepoListPage(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(recentRepos) { repo ->
+                items(repos) { repo ->
                     RepoCard(
                         repo = repo,
                         onClick = {
-                            // TODO: Navigate to Overview screen
-                            println("Clicked on ${repo.fullName}")
+                            navigator.navigateToOverview(repo.owner, repo.name)
                         }
                     )
                 }
@@ -106,10 +84,7 @@ fun RepoListPage(
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
-                        onClick = {
-                            // TODO: Show dialog to add new repo
-                            println("Add new repository clicked")
-                        },
+                        onClick = { showAddDialog = true },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("+ Add New Repository")
@@ -118,6 +93,100 @@ fun RepoListPage(
             }
         }
     }
+
+    // Add Repository Dialog
+    if (showAddDialog) {
+        AddRepoDialog(
+            onDismiss = { showAddDialog = false },
+            onSubmit = { owner, repo ->
+                showAddDialog = false
+                navigator.navigateToOverview(owner, repo)
+            }
+        )
+    }
+}
+
+@Composable
+fun AddRepoDialog(
+    onDismiss: () -> Unit,
+    onSubmit: (owner: String, repo: String) -> Unit
+) {
+    var repoUrl by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Add New Repository",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Enter a GitHub repository URL or owner/repo format",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = repoUrl,
+                    onValueChange = {
+                        repoUrl = it
+                        errorMessage = null
+                    },
+                    label = { Text("Repository URL") },
+                    placeholder = { Text("e.g., facebook/react") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = errorMessage != null
+                )
+
+                errorMessage?.let { error ->
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val repoInfo = GitHubUrlParser.parse(repoUrl)
+                    if (repoInfo != null) {
+                        // Add to cache (with mock data for now)
+                        RepoCache.addRepo(
+                            Repository(
+                                owner = repoInfo.owner,
+                                name = repoInfo.name,
+                                fullName = repoInfo.fullName,
+                                description = "Added repository",
+                                language = null,
+                                stars = 0
+                            )
+                        )
+                        onSubmit(repoInfo.owner, repoInfo.name)
+                    } else {
+                        errorMessage = "Invalid GitHub URL. Use format: owner/repo or https://github.com/owner/repo"
+                    }
+                }
+            ) {
+                Text("Submit")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
@@ -130,8 +199,7 @@ fun RepoCard(repo: Repository, onClick: () -> Unit) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier
-                .padding(16.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             Text(
                 text = repo.fullName,

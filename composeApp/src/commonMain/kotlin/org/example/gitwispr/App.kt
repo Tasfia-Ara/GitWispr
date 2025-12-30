@@ -17,6 +17,21 @@ fun App() {
                 token = screen.token,
                 navigator = navigator
             )
+            is Screen.Overview -> OverviewPage(
+                owner = screen.owner,
+                repo = screen.repo,
+                navigator = navigator
+            )
+            is Screen.Structure -> StructurePage(
+                owner = screen.owner,
+                repo = screen.repo,
+                navigator = navigator
+            )
+            is Screen.Issues -> IssuesPage(
+                owner = screen.owner,
+                repo = screen.repo,
+                navigator = navigator
+            )
         }
     }
 }
